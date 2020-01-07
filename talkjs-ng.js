@@ -1,83 +1,95 @@
-app.service('talkjs', ['$http', '$q', function($http, $q) {
+app.provider('talkjs', [function() {
 
-    var talkAPI = 'https://api.talkjs.com/v1';
-    var secretKey = 'sk_test_VcN37PcVe8AUajGP3epoEqV0';
 
-    var talkJSUserSave = "/talkjs/save/user"
-    // var talkJSUserSave = "https://hookup-production.herokuapp.com" + "/talkjs/save/user"
+	var bearerToken;
+	var appID;
+	var secretKey;
 
-    return {
+	var talkAPI = 'https://api.talkjs.com/v1';
 
-        saveTalkJSUser: function(current, linked) {
+	var talkJSUserSave = "/talkjs/save/user"
+	// var talkJSUserSave = "https://hookup-production.herokuapp.com" + "/talkjs/save/user"
 
-            return $http({
-                method: 'GET',
-                url: talkJSUserSave,
-                param: {
-                    current: current,
-                    linked: linked
-                }
-            })
-        },
-        getMessages: function(userID) {
-            $http.defaults.headers.common['Authorization'] = 'Bearer sk_test_VcN37PcVe8AUajGP3epoEqV0';
+	return {
 
-            var message = '/t3rP1O9r/users/' + userID + '/conversations?isOnline=true';
-            var url = talkAPI + message;
-            log(url);
-            return $http({
-                method: 'GET',
-                url: url
-            })
-        },
-        getCreatedUserList: function(userIDList) {
+		config: function(conf) {
 
-            $http.defaults.headers.common['Authorization'] = 'Bearer sk_test_VcN37PcVe8AUajGP3epoEqV0';
-            // sort Array And Get Results From Participants
-            var extractedUser = [];
-            userIDList.forEach(function(tuple) {
+			var checkObject = Object.keys(conf);
+			console.warn("TalkJS Configuration");
+			console.log(conf);
+			bearerToken = conf.bearerToken;
+			secretKey = conf.bearerToken;
+			appID = conf.appId;
+			//set Request header
 
-                var tempList = Object.keys(tuple.participants);
-                extractedUser.push({
-                    profile: tempList[0]
-                });
-            });
+		},
+		$get: ['$http', '$q', function($http, $q) {
+			return {
 
-            log("Extracted User:");
-            log(extractedUser);
+				getMessages: function(userID) {
+					$http.defaults.headers.common['Authorization'] = 'Bearer ' + secretKey;
 
-            //var url = "https: //api.talkjs.com/v1/t3rP1O9r/users/{userId}";
-            var url = "https://api.talkjs.com/v1/t3rP1O9r/users/";
-            log(url);
-            var promises = [];
+					var message = '/' + appID + '/users/' + userID + '/conversations?isOnline=true';
+					var url = talkAPI + message;
+					log(url);
+					return $http({
+						method: 'GET',
+						url: url
+					})
+				},
+				getCreatedUserList: function(userIDList) {
+					$http.defaults.headers.common['Authorization'] = 'Bearer ' + secretKey;
 
-            extractedUser.forEach(function(tuple) {
-                var newURL = url + tuple.profile;
-                warn("New URL :");
-                log(newURL);
-                promises.push($http({
-                    method: 'GET',
-                    url: newURL
-                }))
-            });
-            return $q.all(promises);
+					// sort Array And Get Results From Participants
+					var extractedUser = [];
+					userIDList.forEach(function(tuple) {
 
-        },
-        normalizeCreatedUserList: function(userList) {
+						var tempList = Object.keys(tuple.participants);
+						extractedUser.push({
+							profile: tempList[0]
+						});
+					});
 
-            log(userList);
-            var finalList = [];
-            // Now POST Resolved DATA Now Sort Out Data And Merge Into Final List
-            userList.forEach(function(tuple) {
+					log("Extracted User:");
+					log(extractedUser);
 
-                finalList.push(tuple.data);
-            });
+					//var url = "https: //api.talkjs.com/v1/t3rP1O9r/users/{userId}";
+					var url = "https://api.talkjs.com/v1/" + appID + "/users/";
+					log(url);
+					var promises = [];
 
-            warn("Final List:");
-            log(finalList);
-            return finalList;
+					extractedUser.forEach(function(tuple) {
+						var newURL = url + tuple.profile;
+						warn("New URL :");
+						log(newURL);
+						promises.push($http({
+							method: 'GET',
+							url: newURL
+						}))
+					});
+					return $q.all(promises);
 
-        }
+				},
+				normalizeCreatedUserList: function(userList) {
 
-    }
+					log(userList);
+					var finalList = [];
+					// Now POST Resolved DATA Now Sort Out Data And Merge Into Final List
+					userList.forEach(function(tuple) {
+
+						finalList.push(tuple.data);
+					});
+
+					warn("Final List:");
+					log(finalList);
+					return finalList;
+
+				}
+
+			}
+		}]
+	}
+
+
+
 }])
